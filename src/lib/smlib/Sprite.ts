@@ -6,8 +6,9 @@ export const SpriteMixin = (B: typeof Sprite3D) =>
 	class extends ActorMixin(B) {
 		constructor(...args: any[]) {
 			super(...args);
+			this.pixelsPerUnit = 1;
 		}
-		loadFromTable(options: Record<string, any>) {
+		loadFromTable(options: Record<string, number>) {
 			super.loadFromTable(options);
 			console.log('Loading extra Sprite data');
 			this.options = options;

@@ -1,16 +1,14 @@
 import * as fengari from 'fengari-web';
+import { Actor, ActorMixin } from './Actor';
+import { Sprite } from './Sprite';
+
+export const ACTOR_REGISTRY: Record<string, ReturnType<typeof ActorMixin>> = {
+	Actor,
+	Sprite
+};
 
 export class LuaManager {
-	private static registryLoaded = false;
-	private static ACTOR_REGISTRY: Record<string, any>;
-	static {
-		this.loadRegistry();
-	}
-
-	private L;
-	private onloadListeners: (() => void)[] = [];
-	loaded;
-	private resolve;
+	L;
 	constructor() {
 		this.L = fengari.lauxlib.luaL_newstate();
 		fengari.lualib.luaL_openlibs(this.L);
@@ -21,23 +19,13 @@ export class LuaManager {
 			1
 		);
 		fengari.lua.lua_pop(this.L, 1);
-		this.loaded = new Promise<void>((resolve) => (this.resolve = resolve));
 		this.registerTypes();
 	}
 
-	private static async loadRegistry() {
-		this.ACTOR_REGISTRY = {
-			Actor: (await import('./Actor')).Actor,
-			Sprite: (await import('./Sprite')).Sprite
-		};
-		this.registryLoaded = true;
-	}
-
 	private async registerTypes() {
-		if (!LuaManager.registryLoaded) await LuaManager.loadRegistry();
 		const luaState = this.L;
 		const LuaTable: Record<string, () => object> = {};
-		Object.keys(LuaManager.ACTOR_REGISTRY).forEach((name) => {
+		Object.keys(ACTOR_REGISTRY).forEach((name) => {
 			LuaTable[name] = function () {
 				console.log('creating table ' + name);
 				const table = TArg(luaState, -1);
@@ -47,17 +35,9 @@ export class LuaManager {
 			};
 		});
 		PushGlobal(this.L, LuaTable, 'Def');
-		this.resolve();
-		this.onloadListeners.forEach((cb) => cb());
-	}
-
-	onload(cb: () => void) {
-		this.onloadListeners.push(cb);
 	}
 
 	async run(code: string) {
-		if (!this.loaded) return;
-
 		// Compile the function
 		const errStatus = fengari.lauxlib.luaL_loadbuffer(
 			this.L,
@@ -88,8 +68,7 @@ export class LuaManager {
 	}
 
 	static async loadActor(table: Record<string, any>) {
-		if (!LuaManager.registryLoaded) await LuaManager.loadRegistry();
-		const actor = new LuaManager.ACTOR_REGISTRY[table.Class]();
+		const actor = new ACTOR_REGISTRY[table.Class]();
 		actor.loadFromTable(table);
 		await actor.load();
 		return actor;

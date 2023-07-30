@@ -2,7 +2,6 @@
 	import { StreamLanguage } from '@codemirror/language';
 	import { lua } from '@codemirror/legacy-modes/mode/lua';
 	import { EditorView, basicSetup } from 'codemirror';
-	import type { Sprite3D } from 'pixi3d/*';
 	import { onMount } from 'svelte';
 	import { SCREEN_HEIGHT, SCREEN_WIDTH } from './smlib/Constants';
 
@@ -16,13 +15,12 @@
 	onMount(() => {
 		async function load() {
 			// Load libraries from onMount so that they don't error on SSR
-			const { Application } = await import('pixi.js');
+			const { Application, Point } = await import('pixi.js');
 			const { LuaManager } = await import('./smlib/LuaManager');
-			const { Camera, CameraOrbitControl } = await import('pixi3d/pixi7');
+			const { LoadMenuPerspective } = await import('./smlib/Util');
 
 			// Load Lua
 			const luaManager = new LuaManager();
-			await luaManager.loaded;
 
 			// Load application
 			app = new Application({
@@ -33,7 +31,7 @@
 				height: SCREEN_HEIGHT
 			});
 
-			const pixiObj: Sprite3D = await luaManager.run(`
+			const pixiObj = await luaManager.run(`
       return Def.Sprite{
         Texture="https://picsum.photos/100",
         OnCommand=function(self)
@@ -42,20 +40,11 @@
         end,
       }
       `);
+			LoadMenuPerspective(0, 640, 480, 320, 240);
+			pixiObj.x = 50;
+			pixiObj.y = 50;
 
-			pixiObj.scale.set(100, 100, 1);
-
-			// let control = new CameraOrbitControl(canvas);
-			// Camera.main.scale.set(0.01, 0.01, 1);
-			// console.log(Camera.main);
-			Camera.main.position.set(SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2, SCREEN_HEIGHT);
-			app.stage.removeChildren();
 			app.stage.addChild(pixiObj);
-			// control.target = {
-			// 	x: SCREEN_WIDTH / 2,
-			// 	y: -SCREEN_HEIGHT / 2,
-			// 	z: 240
-			// };
 		}
 		load();
 		let view = new EditorView({
