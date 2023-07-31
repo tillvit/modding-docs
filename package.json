@@ -31,8 +31,10 @@
 	"type": "module",
 	"dependencies": {
 		"@codemirror/legacy-modes": "^6.3.3",
+		"@codemirror/lint": "^6.4.0",
 		"fengari-web": "^0.1.4",
 		"highlight.js": "^11.8.0",
+		"luaparse": "^0.3.1",
 		"pixi.js": "^7.2.4",
 		"pixi3d": "^2.4.0",
 		"svelte-codemirror-editor": "^1.1.0"

@@ -37,8 +37,7 @@ export class LuaManager {
 		PushGlobal(this.L, LuaTable, 'Def');
 	}
 
-	async run(code: string) {
-		// Compile the function
+	compile(code: string) {
 		const errStatus = fengari.lauxlib.luaL_loadbuffer(
 			this.L,
 			fengari.to_luastring(code),
@@ -55,21 +54,26 @@ export class LuaManager {
 		if (errStatus !== fengari.lua.LUA_OK) {
 			throw response;
 		}
+		return response;
+	}
+
+	async run(code: string) {
+		const response = this.compile(code);
 
 		// Run the function
 		const table = response();
 		if (typeof table != 'object') {
-			lua_error(this.L, 'invalid return: not an actor object');
+			return;
 		}
 
 		// Create the actor
-		const actor = await LuaManager.loadActor(table);
+		const actor = await this.loadActor(table);
 		return actor;
 	}
 
-	static async loadActor(table: Record<string, any>) {
+	async loadActor(table: Record<string, any>) {
 		const actor = new ACTOR_REGISTRY[table.Class]();
-		actor.loadFromTable(table);
+		actor.loadFromTable(this, table);
 		await actor.load();
 		return actor;
 	}

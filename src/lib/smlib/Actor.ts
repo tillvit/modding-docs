@@ -1,6 +1,6 @@
 import { Color } from 'pixi.js';
 import { Container3D, Quaternion, Vec3 } from 'pixi3d/pixi7';
-import { LuaManager } from './LuaManager';
+import { FArg, LuaManager } from './LuaManager';
 
 export enum EffectClock {
 	CLOCK_TIMER,
@@ -87,15 +87,17 @@ class TweenState {
 
 export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: Base) =>
 	class extends B {
-		commands = new Map<string, (self: Metatable, args?: object) => void>();
+		luaMan?: LuaManager;
+		commands = new Map<string, (this: Metatable, args?: object) => void>();
 		metatable: Record<string, (...args: any[]) => any> = {};
 		options: Record<string, any> = {};
 		constructor(...args: any[]) {
 			super(...args);
 		}
 
-		loadFromTable(options: Record<string, any>) {
+		loadFromTable(luaMan: LuaManager, options: Record<string, any>) {
 			console.log('Creating actor with options ', options);
+			this.luaMan = luaMan;
 			this.options = options;
 			for (const [key, val] of Object.entries(options)) {
 				if (key.endsWith('Command')) {
@@ -117,7 +119,7 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 			// Load children
 			for (const [key, val] of Object.entries(this.options)) {
 				if (!isNaN(+key)) {
-					const child = await LuaManager.loadActor(val);
+					const child = await this.luaMan!.loadActor(val);
 					this.addChild(child);
 				}
 			}
@@ -125,7 +127,7 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 
 		PlayCommandNoRecurse(name: string, args?: object) {
 			const command = this.commands.get(name);
-			command?.(this.metatable, args);
+			command?.bind(this.metatable)(args);
 		}
 
 		Sleep() {
@@ -158,20 +160,23 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 		GetTweenTimeLeft() {
 			console.error('GetTweenTimeLeft: method not implemented');
 		}
-		SetX() {
-			console.error('SetX: method not implemented');
+		SetX(x: number) {
+			this.x = x;
 		}
-		SetY() {
-			console.error('SetY: method not implemented');
+		SetY(y: number) {
+			this.y = y;
 		}
-		SetZ() {
-			console.error('SetZ: method not implemented');
+		SetZ(z: number) {
+			this.z = z;
 		}
-		SetXY() {
-			console.error('SetXY: method not implemented');
+		SetXY(x: number, y: number) {
+			this.x = x;
+			this.y = y;
 		}
-		SetXYZ() {
-			console.error('SetXYZ: method not implemented');
+		SetXYZ(x: number, y: number, z: number) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
 		}
 		AddX() {
 			console.error('AddX: method not implemented');
@@ -619,11 +624,26 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 				finishtweening: this.Finishtweening.bind(this),
 				hurrytweening: this.Hurrytweening.bind(this),
 				GetTweenTimeLeft: this.GetTweenTimeLeft.bind(this),
-				x: this.SetX.bind(this),
-				y: this.SetY.bind(this),
-				z: this.SetZ.bind(this),
-				xy: this.SetXY.bind(this),
-				xyz: this.SetXYZ.bind(this),
+				x: () => {
+					this.SetX(FArg(this.luaMan!.L, 3));
+					return this.metatable;
+				},
+				y: () => {
+					this.SetY(FArg(this.luaMan!.L, 3));
+					return this.metatable;
+				},
+				z: () => {
+					this.SetZ(FArg(this.luaMan!.L, 3));
+					return this.metatable;
+				},
+				xy: () => {
+					this.SetXY(FArg(this.luaMan!.L, 3), FArg(this.luaMan!.L, 4));
+					return this.metatable;
+				},
+				xyz: () => {
+					this.SetXYZ(FArg(this.luaMan!.L, 3), FArg(this.luaMan!.L, 4), FArg(this.luaMan!.L, 5));
+					return this.metatable;
+				},
 				addx: this.AddX.bind(this),
 				addy: this.AddY.bind(this),
 				addz: this.AddZ.bind(this),

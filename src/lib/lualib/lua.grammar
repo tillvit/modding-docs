@@ -1,0 +1,225 @@
+@precedence {
+  ret,
+  call,
+  member,
+  power @right,
+  prefix,
+  times @left,
+  plus @left,
+  shift @left,
+  rel @left,
+  equal @left,
+  bitOr @left,
+  bitXor @left,
+  bitAnd @left,
+  compare @left,
+  and @left,
+  or @left
+  assign @right,
+  statement,
+  decl
+}
+
+@top Script { statement+ }
+
+statement[@isGroup=Statement] {
+  Goto{ kw<"goto"> LabelName } |
+  Scope { kw<"do"> statement kw<"end"> } |
+  ForStatement { kw<"for"> (NumericForSpec | GenericForSpec) kw<"do"> statement kw<"end"> } |
+  WhileStatement { kw<"while"> expression kw<"do"> statement kw<"end"> } |
+  RepeatStatement { kw<"repeat"> statement kw<"until"> expression } |
+  IfStatement {
+    kw<"if"> expression kw<"then"> statement
+    (kw<"elseif"> expression kw<"then"> statement)*
+    (kw<"else"> statement)
+    kw<"end">
+  } | 
+  ReturnStatement { !ret kw<"return"> (expression)? } |
+  BreakStatement { kw<"break"> } |
+  AssignStatement |
+  DeclareStatement|
+  Label { "::" LabelName "::" } |
+  FunctionDeclaration |
+  expression | 
+  ";"
+}
+
+NumericForSpec {
+  VariableDefinition "=" expression "," expression ("," expression)?
+}
+
+GenericForSpec {
+  VariableDefinition ("," VariableDefinition) kw<"in"> expression 
+}
+
+AssignStatement {
+  kw<"local">? !assign commaSep1<(VariableDefinition | MemberExpression)> ("=" expression)
+}
+
+DeclareStatement {
+  kw<"local"> commaSep1<(VariableDefinition | MemberExpression)> (";")
+}
+
+FunctionDeclaration {
+  kw<"local">? kw<"function"> VariableDefinition ParamList statement* kw<"end">
+}
+
+expression[@isGroup=Expression] {
+  Number |
+  String |
+  MultilineString |
+  VariableName |
+  boolean |
+  kw<"self"> |
+  kw<"nil"> |
+  TableExpression |
+  UnaryExpression |
+  ParenthesizedExpression |
+  FunctionExpression |
+  MemberExpression |
+  BinaryExpression |
+  CallExpression { expression !call ArgList } 
+}
+
+ParenthesizedExpression { "(" expression ")" }
+
+@skip {spaces | newline | LineComment | BlockComment}
+
+@skip {} {
+
+  String {
+    '"' (stringContentDouble | Escape)* ('"') |
+    "'" (stringContentSingle | Escape)* ("'")
+  }
+
+  MultilineString { "[[" (multilineStringContent | multilineStringNewLine)* multilineStringEnd }
+
+  BlockComment { "--[[" (blockCommentContent | blockCommentNewline)* blockCommentEnd }
+}
+
+@local tokens {
+  multilineStringEnd { "]]" }
+  multilineStringNewLine { "\n" }
+  @else multilineStringContent
+}
+
+@local tokens {
+  blockCommentEnd { "--]]" }
+  blockCommentNewline { "\n" }
+  @else blockCommentContent
+}
+
+boolean { @specialize[@name=BooleanLiteral]<identifier, "true" | "false"> }
+
+kw<term> { @specialize[@name={term}]<identifier, term> }
+
+
+LabelName { identifier }
+
+PropertyName { identifier }
+
+VariableName { identifier }
+
+VariableDefinition { identifier }
+
+
+TableExpression { "{" (field (fieldsep field)+ fieldsep?)? "}" }
+
+field[@isGroup=Field] {
+  FieldDynamic { "[" expression "]" "=" expression } |
+  FieldProp { PropertyName "=" expression } |
+  FieldExp { expression }
+}
+
+BinaryExpression {
+  expression !times ArithOp<"%" | "*" | "/"> expression |
+  expression !plus (ArithOp<"+"> | minus) expression |
+  expression !shift BitOp<">>" ">"? | "<<"> expression |
+  expression !rel (LessThan | CompareOp<"<=" | ">" "="?>) expression |
+  expression !equal CompareOp<"==" | "~=" > expression |
+  expression !bitOr BitOp { "|" } expression |
+  expression !bitXor BitOp<"^"> expression |
+  expression !bitAnd BitOp { "&" } expression |
+  expression !and kw<"and"> expression |
+  expression !or kw<"or"> expression
+}
+
+UnaryExpression {
+  !prefix kw<"not"> expression |
+  !prefix (ArithOp{minus} | BitOp{"~"}) expression
+}
+
+commaSep<content> {
+  "" | content ("," content?)*
+}
+
+commaSep1<content> {
+  content ("," content)*
+}
+
+argAssign {
+  VariableDefinition ("=" expression)?
+}
+
+ArgList {
+  String |
+  MultilineString |
+  TableExpression |
+  "(" commaSep<expression> ")"
+}
+
+ParamList {
+  "(" commaSep<"..." | argAssign> ")"
+}
+
+FunctionExpression {
+  kw<"function"> ParamList statement* kw<"end">
+}
+
+MemberExpression {
+  expression !member (("." | ":") (PropertyName) | "[" expression "]")
+}
+
+@tokens {
+  spaces { ($[ \t\f] | "\\" $[\n\r])+ }
+  newline { $[\n\r] | "\n\r" | "\r\n" }
+
+  LineComment { "--" ![\n]* }
+
+  minus[@name=ArithOp] {"-"}
+
+  @precedence { LineComment, "--[[", minus }
+
+  // @precedence { "--[[", MultilineString }
+
+  word { std.asciiLetter (std.digit | std.asciiLetter)* }
+
+  identifier { word }
+
+  @precedence { spaces, newline, identifier }
+
+  fieldsep { $[,;] }
+
+  hex { @digit | $[a-fA-F] }
+
+  Number {
+    (@digit (@digit)* ("." (@digit)*)? | "." @digit (@digit)*)
+      (("e" | "E") ("+" | "-")? (@digit)+)? |
+    "0x" (hex)+
+  }
+
+  @precedence { Number "." }
+
+  Escape {
+    "\\" $[abfnrtv\\"'\[\]]
+  }
+  
+  stringContentSingle { ![\\\n']+ }
+  stringContentDouble { ![\\\n"]+ }
+
+  ArithOp<expr> { expr }
+  BitOp<expr> { expr }
+  CompareOp<expr> { expr }
+
+  LessThan[@name=CompareOp] { "<" }
+}
