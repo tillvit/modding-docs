@@ -9,20 +9,22 @@ export const SpriteMixin = (B: typeof Sprite3D) =>
 			super(...args);
 			this.pixelsPerUnit = 1;
 		}
-		loadFromTable(luaMan: LuaManager, options: Record<string, number>) {
+		loadFromTable(luaMan: LuaManager, options: Record<string, any>) {
 			super.loadFromTable(luaMan, options);
 			console.log('Loading extra Sprite data');
 			this.options = options;
 			for (const [key, val] of Object.entries(options)) {
 				if (key == 'Texture') this.texture = Texture.from(val);
 			}
+			// Flip texture on y axis becaues of coordinates
 			this.texture.rotate = 8;
 			this.metatable = this.exportMetatable();
 		}
 
 		exportMetatable() {
 			return {
-				...super.exportMetatable()
+				...super.exportMetatable(),
+				toString: () => 'Sprite object'
 			};
 		}
 	};

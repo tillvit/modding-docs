@@ -8,7 +8,30 @@ export const ACTOR_REGISTRY: Record<string, ReturnType<typeof ActorMixin>> = {
 };
 
 export class LuaManager {
-	L;
+	private L;
+	private buff: string[] = [];
+	private lua_writestring = (buf: Uint8Array) => {
+		let str;
+		try {
+			/* If the string is valid utf8, then we can use to_jsstring */
+			str = fengari.to_jsstring(buf);
+		} catch (e) {
+			/* otherwise push copy of raw array */
+			const copy = new Uint8Array(buf.length);
+			copy.set(buf);
+			str = new TextDecoder().decode(copy);
+		}
+		this.buff.push(str);
+	};
+	private lua_writeline = () => {
+		this.onLog(this.buff.join(' '));
+		this.buff = [];
+	};
+
+	onLog = (msg: string) => {
+		console.log(msg);
+	};
+
 	constructor() {
 		this.L = fengari.lauxlib.luaL_newstate();
 		fengari.lualib.luaL_openlibs(this.L);
@@ -19,6 +42,28 @@ export class LuaManager {
 			1
 		);
 		fengari.lua.lua_pop(this.L, 1);
+
+		// replace print
+		fengari.lua.lua_register(this.L, 'print', () => {
+			const L = this.L;
+			const n = fengari.lua.lua_gettop(L); /* number of arguments */
+			fengari.lua.lua_getglobal(L, fengari.to_luastring('tostring', true));
+			for (let i = 1; i <= n; i++) {
+				fengari.lua.lua_pushvalue(L, -1); /* function to be called */
+				fengari.lua.lua_pushvalue(L, i); /* value to print */
+				fengari.lua.lua_call(L, 1, 1);
+				const s = fengari.lua.lua_tolstring(L, -1);
+				if (s === null)
+					return fengari.lua.luaL_error(
+						L,
+						fengari.to_luastring("'tostring' must return a string to 'print'")
+					);
+				this.lua_writestring(s);
+				fengari.lua.lua_pop(L, 1);
+			}
+			this.lua_writeline();
+			return 0;
+		});
 		this.registerTypes();
 	}
 
@@ -27,9 +72,7 @@ export class LuaManager {
 		const LuaTable: Record<string, () => object> = {};
 		Object.keys(ACTOR_REGISTRY).forEach((name) => {
 			LuaTable[name] = function () {
-				console.log('creating table ' + name);
 				const table = TArg(luaState, -1);
-				console.log(table);
 				table.Class = name;
 				return table;
 			};

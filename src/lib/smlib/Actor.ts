@@ -96,7 +96,6 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 		}
 
 		loadFromTable(luaMan: LuaManager, options: Record<string, any>) {
-			console.log('Creating actor with options ', options);
 			this.luaMan = luaMan;
 			this.options = options;
 			for (const [key, val] of Object.entries(options)) {
@@ -613,6 +612,7 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 
 		exportMetatable() {
 			return {
+				toString: () => 'Actor object',
 				name: this.SetName.bind(this),
 				sleep: this.Sleep.bind(this),
 				linear: this.Linear.bind(this),
@@ -625,23 +625,23 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 				hurrytweening: this.Hurrytweening.bind(this),
 				GetTweenTimeLeft: this.GetTweenTimeLeft.bind(this),
 				x: () => {
-					this.SetX(FArg(this.luaMan!.L, 3));
+					this.SetX(FArg(this.luaMan!.L, -1));
 					return this.metatable;
 				},
 				y: () => {
-					this.SetY(FArg(this.luaMan!.L, 3));
+					this.SetY(FArg(this.luaMan!.L, -1));
 					return this.metatable;
 				},
 				z: () => {
-					this.SetZ(FArg(this.luaMan!.L, 3));
+					this.SetZ(FArg(this.luaMan!.L, -1));
 					return this.metatable;
 				},
 				xy: () => {
-					this.SetXY(FArg(this.luaMan!.L, 3), FArg(this.luaMan!.L, 4));
+					this.SetXY(FArg(this.luaMan!.L, -2), FArg(this.luaMan!.L, -1));
 					return this.metatable;
 				},
 				xyz: () => {
-					this.SetXYZ(FArg(this.luaMan!.L, 3), FArg(this.luaMan!.L, 4), FArg(this.luaMan!.L, 5));
+					this.SetXYZ(FArg(this.luaMan!.L, -3), FArg(this.luaMan!.L, -2), FArg(this.luaMan!.L, -1));
 					return this.metatable;
 				},
 				addx: this.AddX.bind(this),
@@ -817,19 +817,5 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 			};
 		}
 	};
-
-// export class Actor extends Container3D {
-// 	protected commands = new Map<string, (self: Metatable, args?: object) => void>();
-
-// 	private metatable: Record<string, (...args: any[]) => any> = {};
-// 	private options;
-
-// 	constructor(options: Record<string, any>) {
-// 		super();
-// 		console.log('Creating actor with options ', options);
-// 		this.options = options;
-// 		this.init();
-// 	}
-// }
 
 export class Actor extends ActorMixin(Container3D) {}

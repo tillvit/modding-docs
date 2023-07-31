@@ -1,6 +1,8 @@
 import {
 	LRLanguage,
 	LanguageSupport,
+	continuedIndent,
+	delimitedIndent,
 	foldInside,
 	foldNodeProp,
 	indentNodeProp
@@ -8,7 +10,6 @@ import {
 import { styleTags, tags as t } from '@lezer/highlight';
 import { parser } from './parser.js';
 
-console.log(parser);
 const parserWithMetadata = parser.configure({
 	props: [
 		styleTags({
@@ -43,7 +44,14 @@ const parserWithMetadata = parser.configure({
 			Equals: t.definitionOperator
 		}),
 		indentNodeProp.add({
-			Application: (context) => context.column(context.node.from) + context.unit
+			IfStatement: continuedIndent({ except: /^\s*(then\b|else\b|elseif\b|end\b)/ }),
+			'FunctionDeclaration FunctionExpression ForStatement WhileStatement DoStatement':
+				delimitedIndent({
+					closing: 'end',
+					align: false
+				}),
+			RepeatStatement: continuedIndent({ except: /^\s*(until\b|end\b)/ }),
+			TableExpression: delimitedIndent({ closing: '}' })
 		}),
 		foldNodeProp.add({
 			Application: foldInside
@@ -54,7 +62,9 @@ const parserWithMetadata = parser.configure({
 export const luaLang = LRLanguage.define({
 	parser: parserWithMetadata,
 	languageData: {
-		commentTokens: { line: '--' }
+		closeBrackets: { brackets: ['(', '[', '{', "'", '"'] },
+		commentTokens: { line: '--', block: { open: '--[[', close: '--]]' } },
+		indentOnInput: /^\s*(then|else|elseif|end|until|\}|\{)$/
 	}
 });
 

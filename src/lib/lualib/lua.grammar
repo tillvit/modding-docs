@@ -24,24 +24,28 @@
 
 statement[@isGroup=Statement] {
   Goto{ kw<"goto"> LabelName } |
-  Scope { kw<"do"> statement kw<"end"> } |
-  ForStatement { kw<"for"> (NumericForSpec | GenericForSpec) kw<"do"> statement kw<"end"> } |
-  WhileStatement { kw<"while"> expression kw<"do"> statement kw<"end"> } |
-  RepeatStatement { kw<"repeat"> statement kw<"until"> expression } |
+  DoStatement { kw<"do"> Block kw<"end"> } |
+  ForStatement { kw<"for"> (NumericForSpec | GenericForSpec) kw<"do"> Block kw<"end"> } |
+  WhileStatement { kw<"while"> expression kw<"do"> Block kw<"end"> } |
+  RepeatStatement { kw<"repeat"> Block kw<"until"> expression } |
   IfStatement {
-    kw<"if"> expression kw<"then"> statement
-    (kw<"elseif"> expression kw<"then"> statement)*
-    (kw<"else"> statement)
+    kw<"if"> expression kw<"then"> Block
+    (kw<"elseif"> expression kw<"then"> Block)*
+    (kw<"else"> Block)
     kw<"end">
   } | 
   ReturnStatement { !ret kw<"return"> (expression)? } |
   BreakStatement { kw<"break"> } |
   AssignStatement |
-  DeclareStatement|
+  DeclareStatement |
   Label { "::" LabelName "::" } |
   FunctionDeclaration |
   expression | 
   ";"
+}
+
+Block {
+  statement* 
 }
 
 NumericForSpec {
@@ -61,7 +65,7 @@ DeclareStatement {
 }
 
 FunctionDeclaration {
-  kw<"local">? kw<"function"> VariableDefinition ParamList statement* kw<"end">
+  kw<"local">? kw<"function"> VariableDefinition ParamList Block kw<"end">
 }
 
 expression[@isGroup=Expression] {
@@ -173,7 +177,7 @@ ParamList {
 }
 
 FunctionExpression {
-  kw<"function"> ParamList statement* kw<"end">
+  kw<"function"> ParamList Block kw<"end">
 }
 
 MemberExpression {
@@ -188,7 +192,7 @@ MemberExpression {
 
   minus[@name=ArithOp] {"-"}
 
-  @precedence { LineComment, "--[[", minus }
+  @precedence { "--[[", LineComment,  minus }
 
   // @precedence { "--[[", MultilineString }
 
@@ -205,13 +209,13 @@ MemberExpression {
   Number {
     (@digit (@digit)* ("." (@digit)*)? | "." @digit (@digit)*)
       (("e" | "E") ("+" | "-")? (@digit)+)? |
-    "0x" (hex)+
+    "0" ("x"|"X") (hex)* ("." (hex)*)? (("p" | "P") ("+" | "-")? (@digit)+)?
   }
 
   @precedence { Number "." }
 
   Escape {
-    "\\" $[abfnrtv\\"'\[\]]
+    "\\" ("x" hex hex | "u" "{" hex+ "}" | @digit @digit @digit | ![xu])
   }
   
   stringContentSingle { ![\\\n']+ }

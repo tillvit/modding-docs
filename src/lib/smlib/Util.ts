@@ -150,8 +150,10 @@ export function RageLookAt(
 
 // cursed way to set pixi3d projection matrix
 function setProjection(camera: Camera, mat: Matrix4x4) {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const c = camera as any;
 
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	c._projection = new MatrixComponent(c, mat, () => {});
 	c._transformId++;
 }

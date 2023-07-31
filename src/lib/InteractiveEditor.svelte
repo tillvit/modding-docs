@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { defaultKeymap, indentWithTab } from '@codemirror/commands';
-	import { HighlightStyle, syntaxHighlighting, syntaxTree } from '@codemirror/language';
-	import { lintGutter, linter, type Diagnostic } from '@codemirror/lint';
+	import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+	import { lintGutter } from '@codemirror/lint';
 	import { keymap } from '@codemirror/view';
 	import { tags } from '@lezer/highlight';
 	import { EditorView, basicSetup } from 'codemirror';
-	import luaparse from 'luaparse';
 	import { onMount } from 'svelte';
-	import { lua } from './lualib/LuaParse';
+	import { lua } from './lualib/LuaLang';
+	import { luaLint } from './lualib/LuaLint';
 	import { SCREEN_HEIGHT, SCREEN_WIDTH } from './smlib/Constants';
 
 	let editor: HTMLDivElement;
@@ -16,24 +16,7 @@
 	let loaded = false;
 
 	const CONSOLE_COLORS: Record<string, string> = {
-		error: '#a01515'
-	};
-
-	const linterExtension = (view: EditorView) => {
-		console.log(syntaxTree(view.state));
-		try {
-			luaparse.parse(view.state.doc.toString());
-		} catch (e: any) {
-			return [
-				{
-					from: e.index,
-					to: e.index + 1,
-					severity: 'error',
-					message: e.stack.split('\n')[0]
-				} as Diagnostic
-			];
-		}
-		return [];
+		error: '#bf2626'
 	};
 
 	const theme = EditorView.theme(
@@ -45,7 +28,10 @@
 				flex: '1',
 				minWidth: '0'
 			},
-			'.cm-scroller': { overflow: 'auto' },
+			'.cm-scroller': {
+				overflow: 'auto',
+				fontFamily: 'Source Code Pro, Consolas, monospace'
+			},
 			'.cm-content': {
 				caretColor: 'var(--text)'
 			},
@@ -53,15 +39,21 @@
 				borderLeftColor: 'var(--text)'
 			},
 			'.cm-content .cm-activeLine': {
-				backgroundColor: '#28282a'
+				backgroundColor: '#4d4d5133'
 			},
 			'.cm-gutters': {
 				backgroundColor: 'var(--secondary)',
 				color: '#ddd',
 				borderRight: '3px solid #16181a'
 			},
+			'&.cm-focused .cm-scroller .cm-selectionLayer .cm-selectionBackground': {
+				background: '#334'
+			},
 			'.cm-gutters .cm-activeLineGutter': {
-				backgroundColor: '#28282a'
+				backgroundColor: '#4d4d5133'
+			},
+			'.cm-selectionMatch': {
+				backgroundColor: '#5f5f6d55'
 			}
 		},
 		{ dark: true }
@@ -90,6 +82,8 @@
 		{ tag: tags.function(tags.definition(tags.variableName)), color: '#a6a6e3' }
 	]);
 
+	let runTimeout = 0;
+
 	export let value: string;
 
 	onMount(() => {
@@ -103,6 +97,9 @@
 
 			// Load Lua
 			const luaManager = new LuaManager();
+
+			// Redirect log
+			luaManager.onLog = (msg) => log(msg);
 
 			// Load application
 			const app = new Application({
@@ -119,11 +116,14 @@
 				extensions: [
 					basicSetup,
 					EditorView.updateListener.of(function (e) {
-						if (e.docChanged) runCode();
+						if (e.docChanged) {
+							clearTimeout(runTimeout);
+							runTimeout = setTimeout(() => runCode(), 200);
+						}
 					}),
 					lua,
 					lintGutter(),
-					linter(linterExtension),
+					luaLint,
 					syntaxHighlighting(highlightTheme),
 					theme,
 					keymap.of([...defaultKeymap, indentWithTab])
@@ -132,12 +132,8 @@
 			});
 
 			editor.replaceWith(view.dom);
-			// view.dom.style.flex = '1';
-			// view.dom.style.minWidth = '0';
-			// view.dom.style.fontSize = '1em';
 
 			async function runCode() {
-				console.log(luaparse.parse(view.state.doc.toString()));
 				try {
 					stdout.replaceChildren();
 					const pixiObj = await luaManager.run(view.state.doc.toString());
@@ -235,6 +231,5 @@
 		padding: 2px 8px;
 		width: 400px;
 		white-space: normal;
-		color: #bf2626;
 	}
 </style>
