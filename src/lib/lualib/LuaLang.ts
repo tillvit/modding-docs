@@ -3,8 +3,6 @@ import {
 	LanguageSupport,
 	continuedIndent,
 	delimitedIndent,
-	foldInside,
-	foldNodeProp,
 	indentNodeProp
 } from '@codemirror/language';
 import { styleTags, tags as t } from '@lezer/highlight';
@@ -52,9 +50,6 @@ const parserWithMetadata = parser.configure({
 				}),
 			RepeatStatement: continuedIndent({ except: /^\s*(until\b|end\b)/ }),
 			TableExpression: delimitedIndent({ closing: '}' })
-		}),
-		foldNodeProp.add({
-			Application: foldInside
 		})
 	]
 });
