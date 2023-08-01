@@ -38,8 +38,6 @@
 }`;
 </script>
 
-<InteractiveEditor bind:value />
-<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
 <h1>Understanding ActorMultiVertexes</h1>
 <p>ActorMultiVertexes (AMVs) can be used to create complex shapes by providing a set of points.</p>
 <h3>Basics</h3>
@@ -50,9 +48,7 @@
 </p>
 <p>Here's a basic example of a triangle using an AMV:</p>
 
-<div class="interactive-container">
-	<canvas bind:this={basicTriangleView} />
-</div>
+<InteractiveEditor bind:value />
 
 <h3>DrawModes</h3>
 <p>

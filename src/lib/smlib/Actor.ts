@@ -91,6 +91,7 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 		commands = new Map<string, (this: Metatable, args?: object) => void>();
 		metatable: Record<string, (...args: any[]) => any> = {};
 		options: Record<string, any> = {};
+		size = [1, 1];
 		constructor(...args: any[]) {
 			super(...args);
 		}
@@ -177,41 +178,42 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 			this.y = y;
 			this.z = z;
 		}
-		AddX() {
-			console.error('AddX: method not implemented');
+		AddX(x: number) {
+			this.x += x;
 		}
-		AddY() {
-			console.error('AddY: method not implemented');
+		AddY(y: number) {
+			this.y += y;
 		}
-		AddZ() {
-			console.error('AddZ: method not implemented');
+		AddZ(z: number) {
+			this.z += z;
 		}
-		SetZoom() {
-			console.error('SetZoom: method not implemented');
+		SetZoom(scale: number) {
+			this.scale.set(scale);
 		}
-		SetZoomX() {
-			console.error('SetZoomX: method not implemented');
+		SetZoomX(scale: number) {
+			this.scale.x = scale;
 		}
-		SetZoomY() {
-			console.error('SetZoomY: method not implemented');
+		SetZoomY(scale: number) {
+			this.scale.y = scale;
 		}
-		SetZoomZ() {
-			console.error('SetZoomZ: method not implemented');
+		SetZoomZ(scale: number) {
+			this.scale.z = scale;
 		}
-		ZoomTo() {
-			console.error('ZoomTo: method not implemented');
+		ZoomTo(width: number, height: number) {
+			this.ZoomToWidth(width);
+			this.ZoomToHeight(height);
 		}
-		ZoomToWidth() {
-			console.error('ZoomToWidth: method not implemented');
+		ZoomToWidth(width: nmber) {
+			this.scale.x = width / this.size[0];
 		}
-		ZoomToHeight() {
-			console.error('ZoomToHeight: method not implemented');
+		ZoomToHeight(height: number) {
+			this.scale.y = height / this.size[1];
 		}
-		SetWidth() {
-			console.error('SetWidth: method not implemented');
+		SetWidth(width: number) {
+			this.size[0] = width;
 		}
-		SetHeight() {
-			console.error('SetHeight: method not implemented');
+		SetHeight(height: number) {
+			this.size[0] = height;
 		}
 		SetBaseAlpha() {
 			console.error('SetBaseAlpha: method not implemented');
@@ -231,8 +233,22 @@ export const ActorMixin = <Base extends new (...args: any[]) => Container3D>(B: 
 		SetBaseZoomZ() {
 			console.error('SetBaseZoomZ: method not implemented');
 		}
-		StretchTo() {
-			console.error('StretchTo: method not implemented');
+		StretchTo(left: number, top: number, bottom: number, right: number) {
+			// width and height of rectangle
+			const width = right - left;
+			const height = bottom - top;
+
+			// center of the rectangle
+			const cx = left + width / 2.0;
+			const cy = top + height / 2.0;
+
+			// zoom fActor needed to scale the Actor to fill the rectangle
+			const fNewZoomX = width / this.size[0];
+			const fNewZoomY = height / this.size[1];
+
+			this.SetXY(cx, cy);
+			this.SetZoomX(fNewZoomX);
+			this.SetZoomY(fNewZoomY);
 		}
 		SetCropLeft() {
 			console.error('SetCropLeft: method not implemented');
