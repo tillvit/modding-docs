@@ -145,7 +145,7 @@
 					// remove weird [string "default.lua"]
 					const match = /\[string "(.+)"\](.+)/g.exec(errorMessage);
 					const msg = match ? match[1] + match[2] : errorMessage;
-
+					console.log(e);
 					log(msg, 'error');
 				}
 			}
@@ -154,6 +154,7 @@
 		}
 
 		function log(message: string, type?: string) {
+			console.log(message);
 			const error = document.createElement('code');
 			error.innerText = message;
 			if (type && CONSOLE_COLORS[type]) error.style.color = CONSOLE_COLORS[type];
@@ -231,5 +232,9 @@
 		padding: 2px 8px;
 		width: 400px;
 		white-space: normal;
+		display: flex;
+		flex-direction: column;
+		overflow: auto;
+		height: 100%;
 	}
 </style>
