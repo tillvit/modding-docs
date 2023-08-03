@@ -74,10 +74,10 @@ class ActorUtil {
 
 export const ActorUtilLib = () =>
 	createStaticLuaLib(ActorUtil, {
-		GetFileType: ['GetFileType', ['SArg']],
-		ResolvePath: ['ResolvePath', ['SArg', 'IArg', 'BArg'], 1],
-		IsRegisteredClass: ['IsRegisteredClass', ['SArg'], 1],
-		LoadAllCommands: ['LoadAllCommands', ['Actor', 'SArg']],
-		LoadAllCommandsFromName: ['LoadAllCommandsFromName', ['Actor', 'SArg', 'SArg']],
-		LoadAllCommandsAndSetXY: ['LoadAllCommandsAndSetXY', ['Actor', 'SArg']]
+		GetFileType: { params: ['SArg'] },
+		ResolvePath: { params: ['SArg', 'IArg', 'BArg'], returnValues: 1 },
+		IsRegisteredClass: { params: ['SArg'], returnValues: 1 },
+		LoadAllCommands: { params: ['Actor', 'SArg'] },
+		LoadAllCommandsFromName: { params: ['Actor', 'SArg', 'SArg'] },
+		LoadAllCommandsAndSetXY: { params: ['Actor', 'SArg'] }
 	});

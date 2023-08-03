@@ -344,7 +344,7 @@ function readTable(L, arg: number) {
 
 interface LuaLibOptions<Class> {
 	methodName?: keyof Class;
-	params: string[];
+	params?: string[];
 	returnValues?: number;
 }
 
@@ -357,7 +357,7 @@ export function createActorLuaLib<Class>(
 
 	for (const [methodName, options] of Object.entries(methods)) {
 		const funcName = options.methodName ?? (methodName as keyof Class);
-		const funcParams = options.params;
+		const funcParams = options.params ?? [];
 		const funcReturn = options.returnValues;
 		if (dummy[funcName] === undefined) {
 			console.warn(
@@ -411,7 +411,7 @@ export function createStaticLuaLib<Class>(
 
 	for (const [methodName, options] of Object.entries(methods)) {
 		const funcName = options.methodName ?? (methodName as keyof Class);
-		const funcParams = options.params;
+		const funcParams = options.params ?? [];
 		const funcReturn = options.returnValues;
 		if (obj[funcName] === undefined) {
 			console.warn(
