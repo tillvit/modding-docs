@@ -19,6 +19,43 @@ export const GLOBAL_LIBRARIES: Record<string, () => object> = {
 	ActorUtil: ActorUtilLib
 };
 
+export const LOAD_SCRIPTS = [
+	'00 init.lua',
+	'00 lua5.3.lua',
+	'01 IniFile.lua',
+	'01 alias.lua',
+	'01 base.lua',
+	'02 Actor.lua',
+	'02 ActorDef.lua',
+	'02 Branches.lua',
+	'02 Colors.lua',
+	'02 Debug.lua',
+	'02 Enum.lua',
+	'02 OptionsMenu.lua',
+	'02 Other.lua',
+	'02 Serialize.lua',
+	'02 Sprite.lua',
+	'02 StageMods.lua',
+	'02 ThemePrefs.lua',
+	'02 ThemePrefsRows.lua',
+	'02 Utilities.lua',
+	'03 CustomSpeedMods.lua',
+	'03 DisplaySpecs.lua',
+	'03 GamePreferences.lua',
+	'03 Gameplay.lua',
+	'03 ModuleSys.lua',
+	'03 ThemeAndGamePrefs.lua',
+	'03 ThemeLibrary.lua',
+	'03 UserPreferences2.lua',
+	'04 CreditsHelpers.lua',
+	'04 LogDisplay.lua',
+	'04 NumPadEntry.lua',
+	'04 SetBGFitHelpers.lua',
+	'04 pause_menu_helper.lua',
+	'05. ColumnModAliases.lua',
+	'05. LuaConsoleHelpers.lua'
+];
+
 function loadLib(name: string) {
 	ACTOR_REGISTRY[name].loadedLib = ACTOR_REGISTRY[name].lib();
 }
@@ -97,6 +134,7 @@ export class LuaManager {
 
 		this.loadGlobalLibraries();
 		this.registerTypes();
+		this.runLoadScripts();
 	}
 
 	private loadGlobalLibraries() {
@@ -112,6 +150,12 @@ export class LuaManager {
 			);
 			fengari.lua.lua_pop(this.L, 1);
 		}
+	}
+
+	private runLoadScripts() {
+		// for (const script of LOAD_SCRIPTS) {
+		//   console.log(fetch())
+		// }
 	}
 
 	private registerTypes() {
@@ -167,8 +211,6 @@ export class LuaManager {
 			fengari.lua.lua_pop(this.L, 1); // remove value from stack
 			throw response;
 		}
-
-		stackDump(this.L);
 
 		const returnVal = tojs(this.L, -1);
 		fengari.lua.lua_pop(this.L, 1); // remove value from stack
@@ -300,17 +342,23 @@ function readTable(L, arg: number) {
 	return obj;
 }
 
+interface LuaLibOptions<Class> {
+	methodName?: keyof Class;
+	params: string[];
+	returnValues?: number;
+}
+
 export function createActorLuaLib<Class>(
 	type: new (...args: any[]) => Class,
-	methods: Record<string, [keyof Class, string[], number?]>
+	methods: Record<string, LuaLibOptions<Class>>
 ) {
 	const library: Record<string, (L) => number> = {};
 	const dummy = new type();
 
-	for (const [methodName, spec] of Object.entries(methods)) {
-		const funcName = spec[0];
-		const funcArgs = spec[1];
-		const funcReturn = spec[2];
+	for (const [methodName, options] of Object.entries(methods)) {
+		const funcName = options.methodName ?? (methodName as keyof Class);
+		const funcParams = options.params;
+		const funcReturn = options.returnValues;
 		if (dummy[funcName] === undefined) {
 			console.warn(
 				`Couldn't register Lua binding for method ${String(funcName)} (class ${
@@ -330,7 +378,7 @@ export function createActorLuaLib<Class>(
 		library[methodName] = (L) => {
 			const self = ArgMan.UArg(L, 1, type.name) as Class;
 			// Typecheck args
-			const args = funcArgs.map((type, index) => {
+			const args = funcParams.map((type, index) => {
 				if (type in ArgMan) return ArgMan[type as keyof typeof ArgMan](L, index + 2);
 				else return ArgMan.UArg(L, index + 1, type);
 			});
@@ -357,14 +405,14 @@ export function createActorLuaLib<Class>(
 
 export function createStaticLuaLib<Class>(
 	obj: Class,
-	methods: Record<string, [keyof Class, string[], number?]>
+	methods: Record<string, LuaLibOptions<Class>>
 ) {
 	const library: Record<string, (L) => number> = {};
 
-	for (const [methodName, spec] of Object.entries(methods)) {
-		const funcName = spec[0];
-		const funcArgs = spec[1];
-		const funcReturn = spec[2];
+	for (const [methodName, options] of Object.entries(methods)) {
+		const funcName = options.methodName ?? (methodName as keyof Class);
+		const funcParams = options.params;
+		const funcReturn = options.returnValues;
 		if (obj[funcName] === undefined) {
 			console.warn(
 				`Couldn't register Lua binding for method ${String(
@@ -383,7 +431,7 @@ export function createStaticLuaLib<Class>(
 		}
 		library[methodName] = (L) => {
 			// Typecheck args
-			const args = funcArgs.map((type, index) => {
+			const args = funcParams.map((type, index) => {
 				if (type in ArgMan) return ArgMan[type as keyof typeof ArgMan](L, index + 1);
 				else return ArgMan.UArg(L, index + 1, type);
 			});

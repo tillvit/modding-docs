@@ -1,7 +1,7 @@
 import { Texture } from 'pixi.js';
 import { Sprite3D } from 'pixi3d/pixi7';
 import { ActorMixin } from './Actor';
-import type { LuaManager } from './LuaManager';
+import { createActorLuaLib, getLoadedLib, type LuaManager } from './LuaManager';
 
 export const SpriteMixin = (B: typeof Sprite3D) =>
 	class extends ActorMixin(B) {
@@ -18,15 +18,12 @@ export const SpriteMixin = (B: typeof Sprite3D) =>
 			}
 			// Flip texture on y axis becaues of coordinates
 			this.texture.rotate = 8;
-			this.metatable = this.exportMetatable();
-		}
-
-		exportMetatable() {
-			return {
-				...super.exportMetatable(),
-				toString: () => 'Sprite object'
-			};
 		}
 	};
+
+export const SpriteLib = () => {
+	const ActorLib = getLoadedLib('Actor');
+	return createActorLuaLib(Sprite, { ...ActorLib });
+};
 
 export class Sprite extends SpriteMixin(Sprite3D) {}

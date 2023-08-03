@@ -154,7 +154,6 @@
 		}
 
 		function log(message: string, type?: string) {
-			console.log(message);
 			const error = document.createElement('code');
 			error.innerText = message;
 			if (type && CONSOLE_COLORS[type]) error.style.color = CONSOLE_COLORS[type];
@@ -191,7 +190,7 @@
 		display: flex;
 		flex-direction: row;
 		background-color: var(--secondary);
-		font-size: 14px;
+		font-size: 13px;
 	}
 	.editor-placeholder {
 		flex: 1;
@@ -236,5 +235,6 @@
 		flex-direction: column;
 		overflow: auto;
 		height: 100%;
+		white-space: nowrap;
 	}
 </style>
